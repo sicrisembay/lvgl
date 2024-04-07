@@ -1,39 +1,49 @@
-#include "../../../lvgl.h"
+#include "../../lv_examples.h"
 #if LV_USE_TABLE && LV_BUILD_EXAMPLES
 
-static void event_cb(lv_obj_t * obj, lv_event_t e)
+static void draw_event_cb(lv_event_t * e)
 {
-    if(e == LV_EVENT_DRAW_PART_BEGIN) {
-        lv_obj_draw_dsc_t * dsc = lv_event_get_param();
-        /*If the cells are drawn...*/
-        if(dsc->part == LV_PART_ITEMS) {
-            uint32_t row = dsc->id /  lv_table_get_col_cnt(obj);
-            uint32_t col = dsc->id - row * lv_table_get_col_cnt(obj);
+    lv_draw_task_t * draw_task = lv_event_get_draw_task(e);
+    lv_draw_dsc_base_t * base_dsc = draw_task->draw_dsc;
+    /*If the cells are drawn...*/
+    if(base_dsc->part == LV_PART_ITEMS) {
+        uint32_t row = base_dsc->id1;
+        uint32_t col = base_dsc->id2;
 
-            /*Make the texts in the first cell center aligned*/
-            if(row == 0) {
-                dsc->label_dsc->align = LV_TEXT_ALIGN_CENTER;
-                dsc->rect_dsc->bg_color = lv_color_mix(lv_color_blue(), dsc->rect_dsc->bg_color, LV_OPA_20);
-                dsc->rect_dsc->bg_opa = LV_OPA_COVER;
+        /*Make the texts in the first cell center aligned*/
+        if(row == 0) {
+            lv_draw_label_dsc_t * label_draw_dsc = lv_draw_task_get_label_dsc(draw_task);
+            if(label_draw_dsc) {
+                label_draw_dsc->align = LV_TEXT_ALIGN_CENTER;
             }
-            /*In the first column align the texts to the right*/
-            else if(col == 0) {
-                dsc->label_dsc->flag = LV_TEXT_ALIGN_RIGHT;
+            lv_draw_fill_dsc_t * fill_draw_dsc = lv_draw_task_get_fill_dsc(draw_task);
+            if(fill_draw_dsc) {
+                fill_draw_dsc->color = lv_color_mix(lv_palette_main(LV_PALETTE_BLUE), fill_draw_dsc->color, LV_OPA_20);
+                fill_draw_dsc->opa = LV_OPA_COVER;
             }
+        }
+        /*In the first column align the texts to the right*/
+        else if(col == 0) {
+            lv_draw_label_dsc_t * label_draw_dsc = lv_draw_task_get_label_dsc(draw_task);
+            if(label_draw_dsc) {
+                label_draw_dsc->align = LV_TEXT_ALIGN_RIGHT;
+            }
+        }
 
-            /*MAke every 2nd row grayish*/
-            if((row != 0 && row % 2) == 0) {
-                dsc->rect_dsc->bg_color = lv_color_mix(lv_color_grey(), dsc->rect_dsc->bg_color, LV_OPA_10);
-                dsc->rect_dsc->bg_opa = LV_OPA_COVER;
+        /*Make every 2nd row grayish*/
+        if((row != 0 && row % 2) == 0) {
+            lv_draw_fill_dsc_t * fill_draw_dsc = lv_draw_task_get_fill_dsc(draw_task);
+            if(fill_draw_dsc) {
+                fill_draw_dsc->color = lv_color_mix(lv_palette_main(LV_PALETTE_GREY), fill_draw_dsc->color, LV_OPA_10);
+                fill_draw_dsc->opa = LV_OPA_COVER;
             }
         }
     }
 }
 
-
 void lv_example_table_1(void)
 {
-    lv_obj_t * table = lv_table_create(lv_scr_act(), NULL);
+    lv_obj_t * table = lv_table_create(lv_screen_active());
 
     /*Fill the first column*/
     lv_table_set_cell_value(table, 0, 0, "Name");
@@ -57,10 +67,11 @@ void lv_example_table_1(void)
 
     /*Set a smaller height to the table. It'll make it scrollable*/
     lv_obj_set_height(table, 200);
-    lv_obj_align(table, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_center(table);
 
     /*Add an event callback to to apply some custom drawing*/
-    lv_obj_add_event_cb(table, event_cb, NULL);
+    lv_obj_add_event_cb(table, draw_event_cb, LV_EVENT_DRAW_TASK_ADDED, NULL);
+    lv_obj_add_flag(table, LV_OBJ_FLAG_SEND_DRAW_TASK_EVENTS);
 }
 
 #endif
